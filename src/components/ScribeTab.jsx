@@ -57,8 +57,12 @@ export default function ScribeTab({ lang, t, apiKey, history, setHistory, setMod
 
     const toggleRecording = async () => {
         if (isRecording) {
-            recognitionRef.current?.stop();
             setIsRecording(false);
+            if (recognitionRef.current) {
+                recognitionRef.current.onend = null;
+                recognitionRef.current.stop();
+                recognitionRef.current = null;
+            }
         } else {
             const Speech = window.SpeechRecognition || window.webkitSpeechRecognition;
             if (!Speech) return setModal({ type: 'alert', title: t.browser_incompatible, message: t.browser_incompatible_msg });
@@ -68,22 +72,23 @@ export default function ScribeTab({ lang, t, apiKey, history, setHistory, setMod
 
             const rec = new Speech();
             rec.lang = speechLocaleMap[lang] || 'fr-FR';
-            rec.continuous = false; // Fix Android duplicate bug: listen sentence by sentence
+            rec.continuous = true;
             rec.interimResults = true;
 
             rec.onresult = (e) => {
                 let curInterim = "";
-                let sessionFinalStr = "";
-                for (let i = 0; i < e.results.length; i++) {
+                let newFinalStr = "";
+                // Loop only from the new result index, avoiding duplication of older final results!
+                for (let i = e.resultIndex; i < e.results.length; i++) {
                     if (e.results[i].isFinal) {
-                        sessionFinalStr += e.results[i][0].transcript + " ";
+                        newFinalStr += e.results[i][0].transcript + " ";
                     } else {
                         curInterim += e.results[i][0].transcript;
                     }
                 }
                 
-                if (sessionFinalStr) {
-                    baseTranscriptRef.current = (baseTranscriptRef.current + " " + sessionFinalStr).trim();
+                if (newFinalStr) {
+                    baseTranscriptRef.current = (baseTranscriptRef.current + " " + newFinalStr).trim();
                 }
                 
                 const combined = (baseTranscriptRef.current + " " + curInterim).trim();
@@ -91,12 +96,24 @@ export default function ScribeTab({ lang, t, apiKey, history, setHistory, setMod
                 setInterim(curInterim);
             };
 
-            rec.onerror = () => {};
+            rec.onerror = (e) => {
+                if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
+                    setIsRecording(false);
+                    if (recognitionRef.current) {
+                        recognitionRef.current.onend = null;
+                        recognitionRef.current.stop();
+                        recognitionRef.current = null;
+                    }
+                }
+            };
+            
             rec.onend = () => { 
-                if (recognitionRef.current) { 
+                // Auto-restart if it disconnected but we are still in "Recording" mode
+                if (isRecording && recognitionRef.current) { 
                     try { rec.start(); } catch(e) {} 
                 } 
             };
+            
             rec.start();
             recognitionRef.current = rec;
             setIsRecording(true);
