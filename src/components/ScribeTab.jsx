@@ -64,13 +64,12 @@ export default function ScribeTab({ lang, t, apiKey, history, setHistory, setMod
             if (!Speech) return setModal({ type: 'alert', title: t.browser_incompatible, message: t.browser_incompatible_msg });
 
             // Store the text we had right before recording started in this session
-            // to append new recognized segments to it accurately.
             baseTranscriptRef.current = transcript;
 
             const rec = new Speech();
-            rec.continuous = true;
-            rec.interimResults = true;
             rec.lang = speechLocaleMap[lang] || 'fr-FR';
+            rec.continuous = false; // Fix Android duplicate bug: listen sentence by sentence
+            rec.interimResults = true;
 
             rec.onresult = (e) => {
                 let curInterim = "";
@@ -83,8 +82,11 @@ export default function ScribeTab({ lang, t, apiKey, history, setHistory, setMod
                     }
                 }
                 
-                // Construct the full string: what we had before + what we newly finalized in this session
-                const combined = baseTranscriptRef.current + (baseTranscriptRef.current && sessionFinalStr ? " " : "") + sessionFinalStr;
+                if (sessionFinalStr) {
+                    baseTranscriptRef.current = (baseTranscriptRef.current + " " + sessionFinalStr).trim();
+                }
+                
+                const combined = (baseTranscriptRef.current + " " + curInterim).trim();
                 setTranscript(combined);
                 setInterim(curInterim);
             };
@@ -92,8 +94,6 @@ export default function ScribeTab({ lang, t, apiKey, history, setHistory, setMod
             rec.onerror = () => {};
             rec.onend = () => { 
                 if (recognitionRef.current) { 
-                    // Session ended and restarting: update the base ref to encompass everything we have now!
-                    baseTranscriptRef.current = transcript;
                     try { rec.start(); } catch(e) {} 
                 } 
             };
@@ -207,32 +207,32 @@ export default function ScribeTab({ lang, t, apiKey, history, setHistory, setMod
             </div>
 
             <div className="action-bar" style={{ justifyContent: 'center', gap: '0.8rem', paddingBottom: '0.5rem', flexWrap: 'wrap' }}>
-                <button className={`btn ${isRecording ? 'btn-danger' : 'btn-primary'}`} style={{ padding: '0.8rem', borderRadius: '50%' }} onClick={toggleRecording} title={isRecording ? t.stop : t.start}>
+                <button className={`btn icon-btn ${isRecording ? 'btn-danger' : 'btn-primary'}`} onClick={toggleRecording} title={isRecording ? t.stop : t.start}>
                     {isRecording ? <MicOff size={22} /> : <Mic size={22} />}
                 </button>
 
-                <button className="btn btn-ghost" style={{ padding: '0.8rem', borderRadius: '50%' }} onClick={handleAI} disabled={loading || !hasText} title={t.analyze}>
+                <button className="btn btn-ghost icon-btn" onClick={handleAI} disabled={loading || !hasText} title={t.analyze}>
                     {loading ? <span style={{fontSize:'10px'}}>...</span> : <Sparkles size={22} />}
                 </button>
-                <button className="btn btn-ghost" style={{ padding: '0.8rem', borderRadius: '50%' }} onClick={() => exportToPDF(transcript, summary, lang)} disabled={!hasText} title={t.pdf}>
+                <button className="btn btn-ghost icon-btn" onClick={() => exportToPDF(transcript, summary, lang)} disabled={!hasText} title={t.pdf}>
                     <Download size={22} />
                 </button>
-                <button className="btn btn-ghost" style={{ padding: '0.8rem', borderRadius: '50%' }} onClick={saveToHistory} disabled={!hasText} title={t.save}>
+                <button className="btn btn-ghost icon-btn" onClick={saveToHistory} disabled={!hasText} title={t.save}>
                     <Save size={22} />
                 </button>
-                <button className={`btn ${drawMode && !eraserMode ? 'btn-accent' : 'btn-ghost'}`} style={{ padding: '0.8rem', borderRadius: '50%' }} onClick={() => { setDrawMode(true); setEraserMode(false); }} title="Dessiner">
+                <button className={`btn icon-btn ${drawMode && !eraserMode ? 'btn-accent' : 'btn-ghost'}`} onClick={() => { setDrawMode(true); setEraserMode(false); }} title="Dessiner">
                     <Pencil size={22} />
                 </button>
-                <button className={`btn ${drawMode && eraserMode ? 'btn-accent' : 'btn-ghost'}`} style={{ padding: '0.8rem', borderRadius: '50%' }} onClick={() => { setDrawMode(true); setEraserMode(true); }} title="Gomme">
+                <button className={`btn icon-btn ${drawMode && eraserMode ? 'btn-accent' : 'btn-ghost'}`} onClick={() => { setDrawMode(true); setEraserMode(true); }} title="Gomme">
                     <Eraser size={22} />
                 </button>
                 {drawMode && (
-                    <button className="btn btn-ghost" style={{ padding: '0.8rem', borderRadius: '50%' }} onClick={() => setDrawMode(false)} title="Fermer le mode dessin">
+                    <button className="btn btn-ghost icon-btn" onClick={() => setDrawMode(false)} title="Fermer le mode dessin">
                         <span style={{fontWeight: 'bold', fontSize: '1.2rem', display: 'flex', alignItems: 'center', justifyContent: 'center'}}>×</span>
                     </button>
                 )}
-                <div style={{ flex: 1, minWidth: '10px' }} />
-                <button className="btn btn-danger" style={{ padding: '0.8rem', borderRadius: '50%' }} disabled={!hasText} onClick={() => {
+                <div style={{ flex: 1, minWidth: '5px' }} />
+                <button className="btn btn-danger icon-btn" disabled={!hasText} onClick={() => {
                     setModal({
                         type: 'confirm',
                         title: t.clear,

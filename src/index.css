@@ -1110,3 +1110,35 @@ textarea {
     0%, 100% { opacity: 1; }
     50% { opacity: 0.5; }
 }
+
+/* ═══════════════════════════
+   FIX BOUTONS & MOBILE
+   ═══════════════════════════ */
+
+.icon-btn {
+    width: 44px;
+    height: 44px;
+    border-radius: 50% !important;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 0 !important;
+    flex-shrink: 0;
+}
+
+@media (max-width: 480px) {
+    .card {
+        padding: 0.8rem;
+    }
+    .action-bar {
+        gap: 0.4rem !important;
+    }
+    .icon-btn {
+        width: 40px;
+        height: 40px;
+    }
+    .icon-btn svg {
+        width: 18px;
+        height: 18px;
+    }
+}

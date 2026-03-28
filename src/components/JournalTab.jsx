@@ -91,13 +91,13 @@ export default function JournalTab({ lang, t, apiKey, setModal, setShowSettings,
                 <div className="journal-header" style={{ flexDirection: 'column', alignItems: 'center', gap: '1rem', paddingBottom: '0.5rem' }}>
                     <h2 style={{ textAlign: 'center', margin: 0 }}>📖 {t.journal_title}</h2>
                     <div className="journal-actions" style={{ justifyContent: 'center', width: '100%', gap: '1.5rem', flexWrap: 'wrap' }}>
-                        <button className="btn btn-primary" style={{ padding: '0.8rem', borderRadius: '50%' }} onClick={addPage} title={t.journal_add_page}>
+                        <button className="btn btn-primary icon-btn" onClick={addPage} title={t.journal_add_page}>
                             <Plus size={22} />
                         </button>
-                        <button className="btn btn-ghost" style={{ padding: '0.8rem', borderRadius: '50%' }} onClick={handleAnalyze} disabled={loading || pages.length === 0} title={t.journal_analyze}>
+                        <button className="btn btn-ghost icon-btn" onClick={handleAnalyze} disabled={loading || pages.length === 0} title={t.journal_analyze}>
                             {loading ? <span style={{fontSize: '10px'}}>...</span> : <Sparkles size={22} />}
                         </button>
-                        <button className="btn btn-ghost" style={{ padding: '0.8rem', borderRadius: '50%' }} onClick={() => exportJournalToPDF(pages, lang)} disabled={pages.length === 0} title={t.journal_export_pdf}>
+                        <button className="btn btn-ghost icon-btn" onClick={() => exportJournalToPDF(pages, lang)} disabled={pages.length === 0} title={t.journal_export_pdf}>
                             <Download size={22} />
                         </button>
                     </div>

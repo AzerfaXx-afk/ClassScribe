@@ -36,7 +36,7 @@ export default function App() {
     // Pull to Refresh logic
     useEffect(() => {
         const handleTouchStart = (e) => {
-            if (window.scrollY === 0 || document.documentElement.scrollTop === 0) {
+            if ((window.scrollY === 0 || document.documentElement.scrollTop === 0) && e.touches[0].clientY < 150) {
                 isPulling.current = true;
                 startY.current = e.touches[0].clientY;
             }
