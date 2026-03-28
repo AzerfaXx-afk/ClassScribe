@@ -56,8 +56,9 @@ body {
     padding-top: 1rem;
     width: 100%;
     max-width: 1000px;
-    height: 94dvh;
-    box-shadow: 10px 10px 0 var(--text-dark);
+    flex: 1;
+    min-height: 0;
+    box-shadow: 8px 8px 0 var(--text-dark);
     display: flex;
     flex-direction: column;
     overflow: hidden;
