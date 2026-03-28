@@ -237,19 +237,20 @@ export default function ScribeTab({ lang, t, apiKey, history, setHistory, setMod
                 <button className="btn btn-ghost icon-btn" onClick={saveToHistory} disabled={!hasText} title={t.save}>
                     <Save size={22} />
                 </button>
-                <button className={`btn icon-btn ${drawMode && !eraserMode ? 'btn-accent' : 'btn-ghost'}`} onClick={() => { setDrawMode(true); setEraserMode(false); }} title="Dessiner">
+                <button className={`btn icon-btn ${drawMode && !eraserMode ? 'btn-accent' : 'btn-ghost'}`} onClick={() => { 
+                    if (drawMode && !eraserMode) setDrawMode(false); 
+                    else { setDrawMode(true); setEraserMode(false); } 
+                }} title="Dessiner">
                     <Pencil size={22} />
                 </button>
-                <button className={`btn icon-btn ${drawMode && eraserMode ? 'btn-accent' : 'btn-ghost'}`} onClick={() => { setDrawMode(true); setEraserMode(true); }} title="Gomme">
+                <button className={`btn icon-btn ${drawMode && eraserMode ? 'btn-accent' : 'btn-ghost'}`} onClick={() => { 
+                    if (drawMode && eraserMode) setDrawMode(false); 
+                    else { setDrawMode(true); setEraserMode(true); } 
+                }} title="Gomme">
                     <Eraser size={22} />
                 </button>
-                {drawMode && (
-                    <button className="btn btn-ghost icon-btn" onClick={() => setDrawMode(false)} title="Fermer le mode dessin">
-                        <span style={{fontWeight: 'bold', fontSize: '1.2rem', display: 'flex', alignItems: 'center', justifyContent: 'center'}}>×</span>
-                    </button>
-                )}
-                <div style={{ flex: 1, minWidth: '5px' }} />
-                <button className="btn btn-danger icon-btn" style={{ marginRight: '10px' }} disabled={!hasText} onClick={() => {
+
+                <button className="btn btn-danger icon-btn" disabled={!hasText} onClick={() => {
                     setModal({
                         type: 'confirm',
                         title: t.clear,

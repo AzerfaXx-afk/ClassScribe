@@ -21,14 +21,18 @@
     -webkit-tap-highlight-color: transparent;
 }
 
-body {
+html, body {
     font-family: 'Quicksand', sans-serif;
     color: var(--text-dark);
     background: var(--bg-cream);
     margin: 0;
+    padding: 0;
     overflow: hidden;
-    height: 100dvh;
-    width: 100vw;
+    height: 100%;
+    width: 100%;
+    position: fixed;
+    inset: 0;
+    touch-action: none; /* empèche le scroll bounce sur iOS/Android */
 }
 
 /* ═══════════════════════════
@@ -36,7 +40,7 @@ body {
    ═══════════════════════════ */
 
 .app {
-    height: 100dvh;
+    height: 100%;
     width: 100%;
     background: radial-gradient(circle at top right, #ffecd2 0%, #fcb69f 100%);
     display: flex;
