@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { MessageCircle, X, Send } from 'lucide-react';
+import { MessageCircle, X, Send, Mic, MicOff } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { chatWithAI } from '../services/aiService';
 
@@ -10,7 +10,48 @@ export default function AIChatBubble({ lang, t, apiKey, contextRef, setShowSetti
     ]);
     const [input, setInput] = useState('');
     const [isTyping, setIsTyping] = useState(false);
+    const [isListening, setIsListening] = useState(false);
     const messagesEndRef = useRef(null);
+    const recognitionRef = useRef(null);
+    
+    const formatMarkdown = (text) => {
+        if (!text) return "";
+        return text
+            .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;") // escape
+            .replace(/&lt;mark&gt;/g, "<mark style='background:#ffdb58;padding:0 3px;border-radius:3px;font-weight:bold'>")
+            .replace(/&lt;\/mark&gt;/g, "</mark>") // unescape mark
+            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+            .replace(/^\s*[-*]\s+(.*$)/gim, '<li style="margin-left:15px">$1</li>')
+            .replace(/\n/g, '<br/>');
+    };
+
+    const toggleListen = () => {
+        if (isListening) {
+            recognitionRef.current?.stop();
+            setIsListening(false);
+        } else {
+            const Speech = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!Speech) return;
+            const rec = new Speech();
+            rec.lang = lang === 'fr' ? 'fr-FR' : lang === 'en' ? 'en-US' : lang === 'es' ? 'es-ES' : 'fr-FR';
+            rec.continuous = false;
+            rec.interimResults = true;
+            
+            rec.onresult = (e) => {
+                let current = "";
+                for (let i = 0; i < e.results.length; i++) {
+                    current += e.results[i][0].transcript;
+                }
+                setInput(current); // Live preview inside the input text
+            };
+            
+            rec.onend = () => setIsListening(false);
+            
+            rec.start();
+            recognitionRef.current = rec;
+            setIsListening(true);
+        }
+    };
 
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -85,8 +126,8 @@ export default function AIChatBubble({ lang, t, apiKey, contextRef, setShowSetti
                                 <div
                                     key={i}
                                     className={`chat-msg ${msg.role === 'user' ? 'user' : msg.role === 'assistant' ? 'ai' : 'system'}`}
+                                    dangerouslySetInnerHTML={{ __html: formatMarkdown(msg.content) }}
                                 >
-                                    {msg.content}
                                 </div>
                             ))}
                             {isTyping && (
@@ -108,6 +149,14 @@ export default function AIChatBubble({ lang, t, apiKey, contextRef, setShowSetti
                                 placeholder={t.chat_placeholder}
                                 disabled={isTyping}
                             />
+                            <button
+                                className={`chat-send-btn ${isListening ? 'listening' : ''}`}
+                                onClick={toggleListen}
+                                style={{ background: isListening ? '#ff7675' : 'transparent', color: isListening ? 'white' : 'var(--text-dark)', boxShadow: 'none' }}
+                                title="Parler à l'IA"
+                            >
+                                {isListening ? <MicOff size={18} /> : <Mic size={18} />}
+                            </button>
                             <button
                                 className="chat-send-btn"
                                 onClick={sendMessage}

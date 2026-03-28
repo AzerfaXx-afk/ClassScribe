@@ -205,9 +205,30 @@ export default function App() {
                                             }}
                                         >
                                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.6rem' }}>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                                    <FileText size={16} style={{ color: 'var(--primary)' }} />
-                                                    <span style={{ fontWeight: 600, fontSize: '0.95rem' }}>{t.course_of} {item.date}</span>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flex: 1, marginRight: '1rem' }}>
+                                                    <FileText size={16} style={{ color: 'var(--primary)', flexShrink: 0 }} />
+                                                    <input 
+                                                        value={item.title || `${t.course_of} ${item.date}`}
+                                                        onClick={(e) => e.stopPropagation()}
+                                                        onChange={(e) => {
+                                                            const newHist = [...history];
+                                                            const idx = newHist.findIndex(h => h.id === item.id);
+                                                            if (idx > -1) {
+                                                                newHist[idx] = { ...newHist[idx], title: e.target.value };
+                                                                setHistory(newHist);
+                                                            }
+                                                        }}
+                                                        style={{ 
+                                                            fontWeight: 600, 
+                                                            fontSize: '0.95rem', 
+                                                            background: 'transparent', 
+                                                            border: 'none', 
+                                                            borderBottom: '1px dashed var(--text-dark)', 
+                                                            width: '100%', 
+                                                            color: 'var(--text-dark)',
+                                                            padding: '2px 0'
+                                                        }} 
+                                                    />
                                                 </div>
                                                 <button
                                                     className="toolbar-btn"
