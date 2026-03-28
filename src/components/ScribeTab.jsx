@@ -19,7 +19,6 @@ export default function ScribeTab({ lang, t, apiKey, history, setHistory, setMod
     const isDrawingRef = useRef(false);
     const baseTranscriptRef = useRef("");
     const lastPosRef = useRef({ x: 0, y: 0 });
-    const micStreamRef = useRef(null);
     const hasText = transcript.replace(/<[^>]*>/g, "").trim().length > 0;
 
     // Keep chat context updated
@@ -56,28 +55,13 @@ export default function ScribeTab({ lang, t, apiKey, history, setHistory, setMod
         setModal({ type: 'alert', title: t.saved, message: t.saved_msg });
     };
 
-    const stopMicBoost = () => {
-        if (micStreamRef.current) {
-            micStreamRef.current.getTracks().forEach(t => t.stop());
-            micStreamRef.current = null;
-        }
-    };
-
     const toggleRecording = async () => {
         if (isRecording) {
             recognitionRef.current?.stop();
             setIsRecording(false);
-            stopMicBoost();
         } else {
             const Speech = window.SpeechRecognition || window.webkitSpeechRecognition;
             if (!Speech) return setModal({ type: 'alert', title: t.browser_incompatible, message: t.browser_incompatible_msg });
-
-            try {
-                // Boost OS microphone limit for distant voices
-                micStreamRef.current = await navigator.mediaDevices.getUserMedia({
-                    audio: { autoGainControl: true, noiseSuppression: true, echoCancellation: true, advanced: [{gain: 2.0}] }
-                });
-            } catch (e) { console.warn("Mic boost not supported", e); }
 
             // Store the text we had right before recording started in this session
             baseTranscriptRef.current = transcript;
@@ -127,7 +111,6 @@ export default function ScribeTab({ lang, t, apiKey, history, setHistory, setMod
                 recognitionRef.current.stop();
                 recognitionRef.current = null;
             }
-            stopMicBoost();
         };
     }, []);
 
