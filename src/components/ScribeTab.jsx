@@ -75,16 +75,18 @@ export default function ScribeTab({ lang, t, apiKey, history, setHistory, setMod
 
             const rec = new Speech();
             rec.lang = speechLocaleMap[lang] || 'fr-FR';
-            rec.continuous = true;
+            
+            // CRUCIAL BUGFIX: Mobile Chrome's speech engine compiles an endless duplicated string 
+            // if continuous is true. We force it to false on Mobile to clear its buffer every sentence.
+            const IS_MOBILE = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            rec.continuous = !IS_MOBILE;
             rec.interimResults = true;
 
             rec.onresult = (e) => {
                 let sessionFinalStr = "";
                 let sessionInterimStr = "";
                 
-                // Chrome Android sometimes keeps all results or recreates them. 
-                // We parse everything from 0 and rebuild the string temporarily.
-                for (let i = 0; i < e.results.length; i++) {
+                for (let i = e.resultIndex; i < e.results.length; i++) {
                     if (e.results[i].isFinal) {
                         sessionFinalStr += e.results[i][0].transcript + " ";
                     } else {
@@ -92,7 +94,12 @@ export default function ScribeTab({ lang, t, apiKey, history, setHistory, setMod
                     }
                 }
                 
-                const combined = (baseTranscriptRef.current + " " + sessionFinalStr + " " + sessionInterimStr).trim();
+                // Commit finalized chunks permanently
+                if (sessionFinalStr) {
+                    baseTranscriptRef.current = (baseTranscriptRef.current + " " + sessionFinalStr).trim();
+                }
+                
+                const combined = (baseTranscriptRef.current + " " + sessionInterimStr).trim();
                 setTranscript(combined);
                 latestTranscriptRef.current = combined;
                 setInterim(sessionInterimStr);
