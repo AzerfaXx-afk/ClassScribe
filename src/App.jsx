@@ -15,6 +15,13 @@ export default function App() {
     const [showSettings, setShowSettings] = useState(false);
     const [modal, setModal] = useState(null);
     const chatContextRef = useRef('');
+    
+    // Pull to refresh states
+    const [isRefreshing, setIsRefreshing] = useState(false);
+    const [pullDistance, setPullDistance] = useState(0);
+    const startY = useRef(0);
+    const isPulling = useRef(false);
+    const pullDistanceRef = useRef(0);
 
     const t = translations[lang] || translations.fr;
 
@@ -26,8 +33,83 @@ export default function App() {
         localStorage.setItem('cs_history', JSON.stringify(history));
     }, [history]);
 
+    // Pull to Refresh logic
+    useEffect(() => {
+        const handleTouchStart = (e) => {
+            if (window.scrollY === 0 || document.documentElement.scrollTop === 0) {
+                isPulling.current = true;
+                startY.current = e.touches[0].clientY;
+            }
+        };
+
+        const handleTouchMove = (e) => {
+            if (!isPulling.current) return;
+            const currentY = e.touches[0].clientY;
+            const distance = currentY - startY.current;
+            if (distance > 0 && (window.scrollY === 0 || document.documentElement.scrollTop === 0)) {
+                pullDistanceRef.current = Math.min(distance, 150);
+                setPullDistance(pullDistanceRef.current);
+            }
+        };
+
+        const handleTouchEnd = () => {
+            if (!isPulling.current) return;
+            isPulling.current = false;
+            
+            if (pullDistanceRef.current > 100) {
+                setIsRefreshing(true);
+                pullDistanceRef.current = 0;
+                setPullDistance(0);
+                
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1800);
+            } else {
+                pullDistanceRef.current = 0;
+                setPullDistance(0);
+            }
+        };
+
+        window.addEventListener('touchstart', handleTouchStart, { passive: true });
+        window.addEventListener('touchmove', handleTouchMove, { passive: true });
+        window.addEventListener('touchend', handleTouchEnd);
+
+        return () => {
+            window.removeEventListener('touchstart', handleTouchStart);
+            window.removeEventListener('touchmove', handleTouchMove);
+            window.removeEventListener('touchend', handleTouchEnd);
+        };
+    }, []);
+
     return (
         <div className="app">
+            {/* Pull to refresh UI */}
+            <div 
+                className={`pull-indicator ${pullDistance > 0 && !isRefreshing ? 'visible' : ''}`}
+                style={{ transform: `translateY(${Math.min(pullDistance - 50, 20)}px)`, opacity: pullDistance / 100 }}
+            >
+                <img src="/logo.png" alt="pull" />
+            </div>
+
+            <AnimatePresence>
+                {isRefreshing && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="refresh-overlay"
+                    >
+                        <motion.div
+                            animate={{ scale: [1, 1.2, 1], rotate: [0, 5, -5, 0] }}
+                            transition={{ repeat: Infinity, duration: 1.5 }}
+                        >
+                            <img src="/logo.png" alt="ClassScribe" className="refresh-logo" />
+                        </motion.div>
+                        <h2 className="loading-text">{t.loading_app || "Chargement..."}</h2>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
             <div className="card">
                 {/* Header */}
                 <header className="scribe-header">

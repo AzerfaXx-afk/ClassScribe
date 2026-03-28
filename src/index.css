@@ -1053,3 +1053,60 @@ textarea {
 ::-webkit-scrollbar-thumb:hover {
     background: rgba(45, 52, 54, 0.4);
 }
+
+/* ═══════════════════════════
+   PULL TO REFRESH
+   ═══════════════════════════ */
+
+.pull-indicator {
+    position: fixed;
+    top: 0;
+    left: 50%;
+    margin-left: -25px;
+    width: 50px;
+    height: 50px;
+    z-index: 9999;
+    pointer-events: none;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.pull-indicator img {
+    width: 100%;
+    border-radius: 12px;
+    box-shadow: 2px 2px 0 var(--text-dark);
+}
+
+.refresh-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+    z-index: 10000;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+.refresh-logo {
+    width: 100px;
+    border-radius: 20px;
+    border: 4px solid var(--text-dark);
+    box-shadow: 6px 6px 0 var(--text-dark);
+    margin-bottom: 2rem;
+}
+
+.loading-text {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--primary);
+    animation: flashText 1.5s infinite;
+}
+
+@keyframes flashText {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}

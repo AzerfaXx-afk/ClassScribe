@@ -88,17 +88,17 @@ export default function JournalTab({ lang, t, apiKey, setModal, setShowSettings,
     return (
         <div className="tab-content">
             <div className="journal-container">
-                <div className="journal-header">
-                    <h2>📖 {t.journal_title}</h2>
-                    <div className="journal-actions">
-                        <button className="btn btn-primary" style={{ padding: '0.5rem 1rem' }} onClick={addPage}>
-                            <Plus size={16} /> <span style={{ fontSize: '0.85rem' }}>{t.journal_add_page}</span>
+                <div className="journal-header" style={{ flexDirection: 'column', alignItems: 'center', gap: '1rem', paddingBottom: '0.5rem' }}>
+                    <h2 style={{ textAlign: 'center', margin: 0 }}>📖 {t.journal_title}</h2>
+                    <div className="journal-actions" style={{ justifyContent: 'center', width: '100%', gap: '1.5rem', flexWrap: 'wrap' }}>
+                        <button className="btn btn-primary" style={{ padding: '0.8rem', borderRadius: '50%' }} onClick={addPage} title={t.journal_add_page}>
+                            <Plus size={22} />
                         </button>
-                        <button className="btn btn-ghost" style={{ padding: '0.5rem 0.8rem' }} onClick={handleAnalyze} disabled={loading || pages.length === 0}>
-                            {loading ? "..." : <Sparkles size={16} />} <span style={{ fontSize: '0.85rem' }}>{t.journal_analyze}</span>
+                        <button className="btn btn-ghost" style={{ padding: '0.8rem', borderRadius: '50%' }} onClick={handleAnalyze} disabled={loading || pages.length === 0} title={t.journal_analyze}>
+                            {loading ? <span style={{fontSize: '10px'}}>...</span> : <Sparkles size={22} />}
                         </button>
-                        <button className="btn btn-ghost" style={{ padding: '0.5rem 0.8rem' }} onClick={() => exportJournalToPDF(pages, lang)} disabled={pages.length === 0}>
-                            <Download size={16} /> <span style={{ fontSize: '0.85rem' }}>{t.journal_export_pdf}</span>
+                        <button className="btn btn-ghost" style={{ padding: '0.8rem', borderRadius: '50%' }} onClick={() => exportJournalToPDF(pages, lang)} disabled={pages.length === 0} title={t.journal_export_pdf}>
+                            <Download size={22} />
                         </button>
                     </div>
                 </div>

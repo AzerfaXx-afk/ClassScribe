@@ -206,41 +206,40 @@ export default function ScribeTab({ lang, t, apiKey, history, setHistory, setMod
                 </span>
             </div>
 
-            <div className="action-bar">
-                <button className={`btn ${isRecording ? 'btn-danger' : 'btn-primary'}`} style={{ padding: '0.6rem 1.2rem' }} onClick={toggleRecording}>
-                    {isRecording ? <MicOff size={18} /> : <Mic size={18} />}
-                    <span style={{ fontSize: '0.9rem' }}>{isRecording ? t.stop : t.start}</span>
+            <div className="action-bar" style={{ justifyContent: 'center', gap: '0.8rem', paddingBottom: '0.5rem', flexWrap: 'wrap' }}>
+                <button className={`btn ${isRecording ? 'btn-danger' : 'btn-primary'}`} style={{ padding: '0.8rem', borderRadius: '50%' }} onClick={toggleRecording} title={isRecording ? t.stop : t.start}>
+                    {isRecording ? <MicOff size={22} /> : <Mic size={22} />}
                 </button>
 
-                <button className="btn btn-ghost" style={{ padding: '0.6rem 1.2rem' }} onClick={handleAI} disabled={loading || !hasText}>
-                    {loading ? "..." : <Sparkles size={16} />} <span style={{ fontSize: '0.9rem' }}>{t.analyze}</span>
+                <button className="btn btn-ghost" style={{ padding: '0.8rem', borderRadius: '50%' }} onClick={handleAI} disabled={loading || !hasText} title={t.analyze}>
+                    {loading ? <span style={{fontSize:'10px'}}>...</span> : <Sparkles size={22} />}
                 </button>
-                <button className="btn btn-ghost" style={{ padding: '0.6rem 1.2rem' }} onClick={() => exportToPDF(transcript, summary, lang)} disabled={!hasText}>
-                    <Download size={16} /> <span style={{ fontSize: '0.9rem' }}>{t.pdf}</span>
+                <button className="btn btn-ghost" style={{ padding: '0.8rem', borderRadius: '50%' }} onClick={() => exportToPDF(transcript, summary, lang)} disabled={!hasText} title={t.pdf}>
+                    <Download size={22} />
                 </button>
-                <button className="btn btn-ghost" style={{ padding: '0.6rem 1.2rem' }} onClick={saveToHistory} disabled={!hasText}>
-                    <Save size={16} /> <span style={{ fontSize: '0.9rem' }}>{t.save}</span>
+                <button className="btn btn-ghost" style={{ padding: '0.8rem', borderRadius: '50%' }} onClick={saveToHistory} disabled={!hasText} title={t.save}>
+                    <Save size={22} />
                 </button>
-                <button className={`btn ${drawMode && !eraserMode ? 'btn-accent' : 'btn-ghost'}`} style={{ padding: '0.6rem' }} onClick={() => { setDrawMode(true); setEraserMode(false); }} title="Dessiner">
-                    <Pencil size={16} />
+                <button className={`btn ${drawMode && !eraserMode ? 'btn-accent' : 'btn-ghost'}`} style={{ padding: '0.8rem', borderRadius: '50%' }} onClick={() => { setDrawMode(true); setEraserMode(false); }} title="Dessiner">
+                    <Pencil size={22} />
                 </button>
-                <button className={`btn ${drawMode && eraserMode ? 'btn-accent' : 'btn-ghost'}`} style={{ padding: '0.6rem' }} onClick={() => { setDrawMode(true); setEraserMode(true); }} title="Gomme">
-                    <Eraser size={16} />
+                <button className={`btn ${drawMode && eraserMode ? 'btn-accent' : 'btn-ghost'}`} style={{ padding: '0.8rem', borderRadius: '50%' }} onClick={() => { setDrawMode(true); setEraserMode(true); }} title="Gomme">
+                    <Eraser size={22} />
                 </button>
                 {drawMode && (
-                    <button className="btn btn-ghost" style={{ padding: '0.6rem' }} onClick={() => setDrawMode(false)} title="Fermer le mode dessin">
-                        <span style={{fontWeight: 'bold', fontSize: '1rem'}}>×</span>
+                    <button className="btn btn-ghost" style={{ padding: '0.8rem', borderRadius: '50%' }} onClick={() => setDrawMode(false)} title="Fermer le mode dessin">
+                        <span style={{fontWeight: 'bold', fontSize: '1.2rem', display: 'flex', alignItems: 'center', justifyContent: 'center'}}>×</span>
                     </button>
                 )}
-                <div style={{ flex: 1 }} /> {/* Spacer */}
-                <button className="btn btn-danger" style={{ padding: '0.6rem' }} disabled={!hasText} onClick={() => {
+                <div style={{ flex: 1, minWidth: '10px' }} />
+                <button className="btn btn-danger" style={{ padding: '0.8rem', borderRadius: '50%' }} disabled={!hasText} onClick={() => {
                     setModal({
                         type: 'confirm',
                         title: t.clear,
                         message: t.clear_msg,
                         onConfirm: () => { setTranscript(""); setSummary(null); clearDrawing(); if (scrollRef.current) scrollRef.current.innerHTML = ""; }
                     });
-                }}><Trash2 size={16} /></button>
+                }} title={t.clear}><Trash2 size={22} /></button>
             </div>
 
             <AnimatePresence>
