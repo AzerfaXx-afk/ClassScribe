@@ -17,7 +17,9 @@ export default function ScribeTab({ lang, t, apiKey, history, setHistory, setMod
     const scrollRef = useRef(null);
     const canvasRef = useRef(null);
     const isDrawingRef = useRef(false);
+    const isRecordingRef = useRef(false);
     const baseTranscriptRef = useRef("");
+    const latestTranscriptRef = useRef("");
     const lastPosRef = useRef({ x: 0, y: 0 });
     const hasText = transcript.replace(/<[^>]*>/g, "").trim().length > 0;
 
@@ -56,7 +58,8 @@ export default function ScribeTab({ lang, t, apiKey, history, setHistory, setMod
     };
 
     const toggleRecording = async () => {
-        if (isRecording) {
+        if (isRecordingRef.current) {
+            isRecordingRef.current = false;
             setIsRecording(false);
             if (recognitionRef.current) {
                 recognitionRef.current.onend = null;
@@ -67,8 +70,8 @@ export default function ScribeTab({ lang, t, apiKey, history, setHistory, setMod
             const Speech = window.SpeechRecognition || window.webkitSpeechRecognition;
             if (!Speech) return setModal({ type: 'alert', title: t.browser_incompatible, message: t.browser_incompatible_msg });
 
-            // Store the text we had right before recording started in this session
             baseTranscriptRef.current = transcript;
+            latestTranscriptRef.current = transcript;
 
             const rec = new Speech();
             rec.lang = speechLocaleMap[lang] || 'fr-FR';
@@ -76,28 +79,28 @@ export default function ScribeTab({ lang, t, apiKey, history, setHistory, setMod
             rec.interimResults = true;
 
             rec.onresult = (e) => {
-                let curInterim = "";
-                let newFinalStr = "";
-                // Loop only from the new result index, avoiding duplication of older final results!
-                for (let i = e.resultIndex; i < e.results.length; i++) {
+                let sessionFinalStr = "";
+                let sessionInterimStr = "";
+                
+                // Chrome Android sometimes keeps all results or recreates them. 
+                // We parse everything from 0 and rebuild the string temporarily.
+                for (let i = 0; i < e.results.length; i++) {
                     if (e.results[i].isFinal) {
-                        newFinalStr += e.results[i][0].transcript + " ";
+                        sessionFinalStr += e.results[i][0].transcript + " ";
                     } else {
-                        curInterim += e.results[i][0].transcript;
+                        sessionInterimStr += e.results[i][0].transcript;
                     }
                 }
                 
-                if (newFinalStr) {
-                    baseTranscriptRef.current = (baseTranscriptRef.current + " " + newFinalStr).trim();
-                }
-                
-                const combined = (baseTranscriptRef.current + " " + curInterim).trim();
+                const combined = (baseTranscriptRef.current + " " + sessionFinalStr + " " + sessionInterimStr).trim();
                 setTranscript(combined);
-                setInterim(curInterim);
+                latestTranscriptRef.current = combined;
+                setInterim(sessionInterimStr);
             };
 
             rec.onerror = (e) => {
                 if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
+                    isRecordingRef.current = false;
                     setIsRecording(false);
                     if (recognitionRef.current) {
                         recognitionRef.current.onend = null;
@@ -108,12 +111,16 @@ export default function ScribeTab({ lang, t, apiKey, history, setHistory, setMod
             };
             
             rec.onend = () => { 
-                // Auto-restart if it disconnected but we are still in "Recording" mode
-                if (isRecording && recognitionRef.current) { 
+                // Store the completely finalized session text into the base.
+                // The next session starts with a clean e.results list.
+                baseTranscriptRef.current = latestTranscriptRef.current;
+                
+                if (isRecordingRef.current && recognitionRef.current) { 
                     try { rec.start(); } catch(e) {} 
                 } 
             };
             
+            isRecordingRef.current = true;
             rec.start();
             recognitionRef.current = rec;
             setIsRecording(true);
