@@ -12,10 +12,12 @@ export default function ScribeTab({ lang, t, apiKey, history, setHistory, setMod
     const [showFormatting, setShowFormatting] = useState(false);
     const [loading, setLoading] = useState(false);
     const [drawMode, setDrawMode] = useState(false);
+    const [eraserMode, setEraserMode] = useState(false);
     const recognitionRef = useRef(null);
     const scrollRef = useRef(null);
     const canvasRef = useRef(null);
     const isDrawingRef = useRef(false);
+    const baseTranscriptRef = useRef("");
     const lastPosRef = useRef({ x: 0, y: 0 });
     const hasText = transcript.replace(/<[^>]*>/g, "").trim().length > 0;
 
@@ -61,6 +63,10 @@ export default function ScribeTab({ lang, t, apiKey, history, setHistory, setMod
             const Speech = window.SpeechRecognition || window.webkitSpeechRecognition;
             if (!Speech) return setModal({ type: 'alert', title: t.browser_incompatible, message: t.browser_incompatible_msg });
 
+            // Store the text we had right before recording started in this session
+            // to append new recognized segments to it accurately.
+            baseTranscriptRef.current = transcript;
+
             const rec = new Speech();
             rec.continuous = true;
             rec.interimResults = true;
@@ -68,15 +74,29 @@ export default function ScribeTab({ lang, t, apiKey, history, setHistory, setMod
 
             rec.onresult = (e) => {
                 let curInterim = "";
-                for (let i = e.resultIndex; i < e.results.length; i++) {
-                    if (e.results[i].isFinal) setTranscript(p => p + " " + e.results[i][0].transcript);
-                    else curInterim += e.results[i][0].transcript;
+                let sessionFinalStr = "";
+                for (let i = 0; i < e.results.length; i++) {
+                    if (e.results[i].isFinal) {
+                        sessionFinalStr += e.results[i][0].transcript + " ";
+                    } else {
+                        curInterim += e.results[i][0].transcript;
+                    }
                 }
+                
+                // Construct the full string: what we had before + what we newly finalized in this session
+                const combined = baseTranscriptRef.current + (baseTranscriptRef.current && sessionFinalStr ? " " : "") + sessionFinalStr;
+                setTranscript(combined);
                 setInterim(curInterim);
             };
 
             rec.onerror = () => {};
-            rec.onend = () => { if (recognitionRef.current) { try { rec.start(); } catch(e) {} } };
+            rec.onend = () => { 
+                if (recognitionRef.current) { 
+                    // Session ended and restarting: update the base ref to encompass everything we have now!
+                    baseTranscriptRef.current = transcript;
+                    try { rec.start(); } catch(e) {} 
+                } 
+            };
             rec.start();
             recognitionRef.current = rec;
             setIsRecording(true);
@@ -108,17 +128,24 @@ export default function ScribeTab({ lang, t, apiKey, history, setHistory, setMod
 
     // Drawing canvas logic
     useEffect(() => {
-        if (!drawMode || !canvasRef.current) return;
+        if (!canvasRef.current) return;
         const canvas = canvasRef.current;
         const parent = canvas.parentElement;
-        canvas.width = parent.offsetWidth;
-        canvas.height = parent.offsetHeight;
+        
+        if (!canvas.getAttribute('data-init')) {
+            canvas.width = parent.offsetWidth;
+            canvas.height = parent.offsetHeight || 500;
+            canvas.setAttribute('data-init', 'true');
+        }
 
         const ctx = canvas.getContext('2d');
         ctx.strokeStyle = '#ff7e67';
-        ctx.lineWidth = 3;
+        ctx.lineWidth = eraserMode ? 20 : 3;
         ctx.lineCap = 'round';
         ctx.lineJoin = 'round';
+        ctx.globalCompositeOperation = eraserMode ? 'destination-out' : 'source-over';
+
+        if (!drawMode) return;
 
         const getPos = (e) => {
             const rect = canvas.getBoundingClientRect();
@@ -162,7 +189,7 @@ export default function ScribeTab({ lang, t, apiKey, history, setHistory, setMod
             canvas.removeEventListener('touchmove', onMove);
             canvas.removeEventListener('touchend', onEnd);
         };
-    }, [drawMode]);
+    }, [drawMode, eraserMode]);
 
     const clearDrawing = () => {
         if (!canvasRef.current) return;
@@ -194,20 +221,24 @@ export default function ScribeTab({ lang, t, apiKey, history, setHistory, setMod
                 <button className="btn btn-ghost" style={{ padding: '0.6rem 1.2rem' }} onClick={saveToHistory} disabled={!hasText}>
                     <Save size={16} /> <span style={{ fontSize: '0.9rem' }}>{t.save}</span>
                 </button>
-                <button className={`btn ${drawMode ? 'btn-accent' : 'btn-ghost'}`} style={{ padding: '0.6rem' }} onClick={() => setDrawMode(!drawMode)} title={t.draw_mode}>
+                <button className={`btn ${drawMode && !eraserMode ? 'btn-accent' : 'btn-ghost'}`} style={{ padding: '0.6rem' }} onClick={() => { setDrawMode(true); setEraserMode(false); }} title="Dessiner">
                     <Pencil size={16} />
                 </button>
+                <button className={`btn ${drawMode && eraserMode ? 'btn-accent' : 'btn-ghost'}`} style={{ padding: '0.6rem' }} onClick={() => { setDrawMode(true); setEraserMode(true); }} title="Gomme">
+                    <Eraser size={16} />
+                </button>
                 {drawMode && (
-                    <button className="btn btn-ghost" style={{ padding: '0.6rem' }} onClick={clearDrawing} title={t.draw_clear}>
-                        <Eraser size={16} />
+                    <button className="btn btn-ghost" style={{ padding: '0.6rem' }} onClick={() => setDrawMode(false)} title="Fermer le mode dessin">
+                        <span style={{fontWeight: 'bold', fontSize: '1rem'}}>×</span>
                     </button>
                 )}
-                <button className="btn btn-danger" style={{ padding: '0.6rem', marginLeft: 'auto' }} disabled={!hasText} onClick={() => {
+                <div style={{ flex: 1 }} /> {/* Spacer */}
+                <button className="btn btn-danger" style={{ padding: '0.6rem' }} disabled={!hasText} onClick={() => {
                     setModal({
                         type: 'confirm',
                         title: t.clear,
                         message: t.clear_msg,
-                        onConfirm: () => { setTranscript(""); setSummary(null); if (scrollRef.current) scrollRef.current.innerHTML = ""; }
+                        onConfirm: () => { setTranscript(""); setSummary(null); clearDrawing(); if (scrollRef.current) scrollRef.current.innerHTML = ""; }
                     });
                 }}><Trash2 size={16} /></button>
             </div>
@@ -283,13 +314,11 @@ export default function ScribeTab({ lang, t, apiKey, history, setHistory, setMod
                         </div>
                     )}
                 </div>
-                {drawMode && (
-                    <canvas
-                        ref={canvasRef}
-                        className="drawing-overlay"
-                        style={{ position: 'absolute', inset: 0, borderRadius: '24px' }}
-                    />
-                )}
+                <canvas
+                    ref={canvasRef}
+                    className={`drawing-overlay ${drawMode ? 'draw-active' : ''}`}
+                    style={{ position: 'absolute', inset: 0, borderRadius: '24px', pointerEvents: drawMode ? 'auto' : 'none' }}
+                />
             </div>
         </div>
     );
